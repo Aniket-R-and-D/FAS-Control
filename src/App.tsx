@@ -78,37 +78,40 @@ const HestiaControlPanel = () => {
   // ...
 
   const handleQrResult = (rawValue: string) => {
-    // Validate HESTIA:IP:PORT format
-    if (!rawValue.startsWith('http')) {
-      stopScan();
-      showError(
-        'Invalid QR code scanned.\n\nExpected format:\nhttp://IP_ADDRESS:PORT\n\nExample: http://192.168.4.74:8085',
-        true
-      );
-      return;
+    let processedUrl = rawValue.trim();
+    
+    // 1. If no protocol, default to http://
+    if (!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')) {
+      processedUrl = 'http://' + processedUrl;
     }
 
-    const parts = rawValue.split(':');
-    if (parts.length !== 3 || !parts[1] || !parts[2]) {
+    try {
+      const url = new URL(processedUrl);
+      const scannedIp = url.hostname;
+      const scannedPort = url.port || (url.protocol === 'https:' ? '443' : '80');
+      const scannedProtocol = url.protocol.replace(':', '');
+
+      // Basic host validation
+      if (!scannedIp) {
+        throw new Error('No host found');
+      }
+
+      setIpAddress(scannedIp);
+      setPort(scannedPort);
+
+      // Auto-connect after short delay
+      setTimeout(() => {
+        stopScan();
+        connectToDevice(scannedIp, scannedPort, scannedProtocol);
+      }, 500);
+
+    } catch (e) {
       stopScan();
       showError(
-        'Invalid QR code format.\n\nExpected: http://IP_ADDRESS:PORT\nGot: ' + rawValue,
+        'Invalid URL or QR format.\n\nExpected:\nhttp://IP_ADDRESS:PORT\n\nGot: ' + rawValue,
         true
       );
-      return;
     }
-
-    const scannedIp = parts[1].replace(/^\/\//, '');
-    const scannedPort = parts[2];
-
-    setIpAddress(scannedIp);
-    setPort(scannedPort);
-
-    // Auto-connect after short delay
-    setTimeout(() => {
-      stopScan();
-      connectToDevice(scannedIp, scannedPort);
-    }, 500);
   };
 
   const stopScan = async () => {
@@ -131,21 +134,14 @@ const HestiaControlPanel = () => {
     setIsScanError(fromScan);
   };
 
-  const connectToDevice = async (ip: string, p: string) => {
-    // Basic validation
-    const ipPattern = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
-    if (!ipPattern.test(ip)) {
-      showError('Invalid IP address: ' + ip + '\n\nPlease enter a valid IPv4 address\n(e.g. 192.168.4.74)');
-      return;
-    }
-
+  const connectToDevice = async (ip: string, p: string, protocol: string = 'http') => {
     const portNum = parseInt(p, 10);
     if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
       showError('Invalid port: ' + p + '\n\nPort must be between 1 and 65535');
       return;
     }
 
-    const url = 'http://' + ip + ':' + p;
+    const url = `${protocol}://${ip}:${p}`;
 
     // Show loading state
     setEspUrl(url);
@@ -155,7 +151,17 @@ const HestiaControlPanel = () => {
     setIframeLoading(true);
     setIsConnected(true);
 
-    // Try to reach the device first
+    // Try to reach the device first (only for HTTP)
+    // HTTPS with self-signed certs will always fail fetch() in the app
+    if (protocol === 'https') {
+      // Set a longer fallback timeout for HTTPS loads
+      if (iframeTimerRef.current) clearTimeout(iframeTimerRef.current);
+      iframeTimerRef.current = setTimeout(() => {
+        setIframeLoading(false);
+      }, 8000);
+      return;
+    }
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -178,7 +184,7 @@ const HestiaControlPanel = () => {
       showError(
         'Could not reach the device at:\n' +
         url +
-        '\n\nPlease check:\n• The device is powered on \n• Your phone is connected to the panel\'s WiFi\n• If Entered Manually, the IP address and port are correct'
+        '\n\nPlease check:\n• The device is powered on \n• Your phone is connected to the panel\'s WiFi\n• The IP address and port are correct\n• If using HTTPS, ensure the certificate is trusted'
       );
     }
   };
@@ -196,9 +202,9 @@ const HestiaControlPanel = () => {
       clearTimeout(iframeTimerRef.current);
     }
     showError(
-      'Could not reach the ESP32 web server at:\n' +
+      'Could not reach the web server at:\n' +
       espUrl +
-      '\n\nPlease check:\n• The IP address and port are correct\n• Your phone is on the same WiFi\n• The ESP32 device is powered on'
+      '\n\nPlease check:\n• The IP address and port are correct\n• Your phone is on the same WiFi\n• The device is powered on'
     );
   };
 
@@ -210,7 +216,8 @@ const HestiaControlPanel = () => {
 
     setIsRetrying(true);
     setTimeout(() => {
-      connectToDevice(ipAddress, port);
+      // Manual entry defaults to http
+      connectToDevice(ipAddress, port, 'http');
       setIsRetrying(false);
     }, 300);
   };
