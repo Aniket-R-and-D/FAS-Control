@@ -5,6 +5,7 @@ import android.net.http.SslError;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
+import android.webkit.WebSettings;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
@@ -12,39 +13,61 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-@Override
-public void onStart() {
-    super.onStart();
 
-    WebView webView = getBridge().getWebView();
+        WebView webView = getBridge().getWebView();
+        WebSettings settings = webView.getSettings();
 
-    // 1. Storage & JavaScript settings
-    webView.getSettings().setDomStorageEnabled(true);
-    webView.getSettings().setDatabaseEnabled(true);
-    webView.getSettings().setJavaScriptEnabled(true);
+        // 1. Core Settings
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
+        settings.setJavaScriptEnabled(true);
+        settings.setAllowFileAccess(true);
+        
+        // 2. Cross-Origin (Required for HTTPS iframes)
+        settings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setAllowFileAccessFromFileURLs(true);
 
-    // 2. MIXED CONTENT: This is critical for loading HTTP content inside an HTTPS app
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-        webView.getSettings().setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-    }
+        // 3. Debugging
+        WebView.setWebContentsDebuggingEnabled(true);
 
-    // 3. USER AGENT: Some servers block mobile WebViews; this mimics Chrome
-    String chromeUA = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
-    webView.getSettings().setUserAgentString(chromeUA);
-
-    // 4. Cookie Configuration
-    CookieManager cookieManager = CookieManager.getInstance();
-    cookieManager.setAcceptCookie(true);
-    cookieManager.setAcceptThirdPartyCookies(webView, true);
-
-    // 5. Safety Override: Bypass SSL errors for local hardware certificates
-    webView.setWebViewClient(new BridgeWebViewClient(getBridge()) {
-        @Override
-        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            handler.proceed();
+        // 4. Mixed Content
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
-    });
-}
 
+        // 5. Desktop User Agent
+        String desktopUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+        settings.setUserAgentString(desktopUA);
+
+        // 6. ULTIMATE COOKIE FIX
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        
+        // This line MUST be called on the specific WebView instance
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
+        
+        // Force the manager to accept all cookies
+        cookieManager.setAcceptCookie(true);
+        cookieManager.flush();
+
+        // 7. Custom Client
+        webView.setWebViewClient(new BridgeWebViewClient(getBridge()) {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // Force sync cookies to disk after login happens
+                CookieManager.getInstance().flush();
+                super.onPageFinished(view, url);
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                // IMPORTANT: We added the .crt file to res/raw and updated network_security_config.xml.
+                // We should let the system handle the trust. 
+                // If it still fails, we will proceed, but this is the "fallback" only.
+                handler.proceed();
+            }
+        });
+    }
 }

@@ -151,42 +151,11 @@ const HestiaControlPanel = () => {
     setIframeLoading(true);
     setIsConnected(true);
 
-    // Try to reach the device first (only for HTTP)
-    // HTTPS with self-signed certs will always fail fetch() in the app
-    if (protocol === 'https') {
-      // Set a longer fallback timeout for HTTPS loads
-      if (iframeTimerRef.current) clearTimeout(iframeTimerRef.current);
-      iframeTimerRef.current = setTimeout(() => {
-        setIframeLoading(false);
-      }, 8000);
-      return;
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      await fetch(url, {
-        method: 'GET',
-        mode: 'no-cors',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // Device is reachable — iframe will load
-      // Set a fallback timeout in case iframe doesn't fire onLoad
-      iframeTimerRef.current = setTimeout(() => {
-        setIframeLoading(false);
-      }, 8000);
-    } catch {
-      // Device unreachable — show error page
-      showError(
-        'Could not reach the device at:\n' +
-        url +
-        '\n\nPlease check:\n• The device is powered on \n• Your phone is connected to the panel\'s WiFi\n• The IP address and port are correct\n• If using HTTPS, ensure the certificate is trusted'
-      );
-    }
+    // Set a safety fallback timer to hide loading if onLoad never fires
+    if (iframeTimerRef.current) clearTimeout(iframeTimerRef.current);
+    iframeTimerRef.current = setTimeout(() => {
+      setIframeLoading(false);
+    }, 5000);
   };
 
   const handleIframeLoad = () => {
@@ -216,8 +185,18 @@ const HestiaControlPanel = () => {
 
     setIsRetrying(true);
     setTimeout(() => {
-      // Manual entry defaults to http
-      connectToDevice(ipAddress, port, 'http');
+      let manualIp = ipAddress.trim();
+      let manualProtocol = 'http';
+
+      if (manualIp.startsWith('https://')) {
+        manualProtocol = 'https';
+        manualIp = manualIp.replace('https://', '');
+      } else if (manualIp.startsWith('http://')) {
+        manualProtocol = 'http';
+        manualIp = manualIp.replace('http://', '');
+      }
+
+      connectToDevice(manualIp, port, manualProtocol);
       setIsRetrying(false);
     }, 300);
   };
@@ -360,12 +339,8 @@ const HestiaControlPanel = () => {
         {/* Full Screen iframe */}
         <div className="flex-1 relative bg-white">
           {iframeLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-50 z-10">
-              <div className="text-center">
-                <div className="w-10 h-10 border-3 border-slate-200 border-t-[#52B5A2] rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Syncing with Device...</p>
-                <p className="text-[9px] text-slate-400 mt-2 font-mono bg-white px-2 py-1 rounded border border-slate-100">{espUrl}</p>
-              </div>
+            <div className="absolute top-0 left-0 right-0 h-1 z-20">
+              <div className="h-full bg-[#52B5A2] animate-pulse shadow-[0_0_8px_rgba(82,181,162,0.8)]" />
             </div>
           )}
           <iframe

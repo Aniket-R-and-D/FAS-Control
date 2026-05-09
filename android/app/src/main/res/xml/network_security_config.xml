@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Trust specific local domains -->
+        <domain includeSubdomains="true">192.168.1.1</domain>
+        <domain includeSubdomains="true">192.168.4.1</domain>
+        <domain includeSubdomains="true">192.168.5.1</domain>
+        <domain includeSubdomains="true">192.168.0.200</domain>
+        
+        <trust-anchors>
+            <!-- Trusting the exported Raspberry Pi certificate -->
+            <certificates src="@raw/dexter_hms_001"/>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
