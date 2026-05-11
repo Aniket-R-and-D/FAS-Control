@@ -7,7 +7,6 @@ import {
     faWifi,
     faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
-import logo from '@/assets/s1.svg';
 
 interface DeviceConnectionPortalProps {
     ipAddress: string;
@@ -29,25 +28,7 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
     const [showManual, setShowManual] = useState(false);
 
     return (
-        <div className="min-h-screen font-sans flex flex-col bg-[#F5F7FA] overflow-y-auto">
-
-            {/* ThingsBoard Style Header */}
-            <header className="bg-[#252F3D] px-6 pt-[calc(1rem+env(safe-area-inset-top))] pb-4 flex items-center justify-between shadow-md">
-                <div className="flex items-center gap-3">
-                    <div className="bg-white p-1 rounded">
-                         <img src={logo} alt="Hestia Logo" className="h-6 w-auto" />
-                    </div>
-                    <h1 className="text-white text-lg font-bold tracking-tight">
-                        SEPLE Connect
-                    </h1>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="bg-[#52B5A2] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                        Active
-                    </span>
-                </div>
-            </header>
-
+        <div className="font-sans flex flex-col bg-[#F5F7FA]">
             <main className="px-6 py-8 flex-1 flex flex-col max-w-md mx-auto w-full space-y-6">
                 
                 {/* Introduction */}
@@ -58,21 +39,17 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
                     </p>
                 </div>
 
-                {/* ═══════════════════════════════════
-                    QR Scanner — Dashboard Style Card
-                    ═══════════════════════════════════ */}
+                {/* QR Scanner Card */}
                 <section>
                     <button
                         onClick={startScan}
                         className="w-full rounded-lg bg-white shadow-sm border border-slate-200 overflow-hidden active:scale-[0.99] transition-all group"
                     >
-                        {/* Card Header (Teal - TB Style) */}
                         <div className="bg-[#52B5A2] px-4 py-2 flex items-center justify-between">
                             <span className="text-white text-xs font-bold uppercase tracking-widest">Connection Gateway</span>
                             <FontAwesomeIcon icon={faQrcode} className="text-white/80 text-xs" />
                         </div>
 
-                        {/* Card Content */}
                         <div className="p-8 flex flex-col items-center gap-6">
                             <div className="w-24 h-24 rounded-lg bg-slate-50 border-2 border-dashed border-[#52B5A2]/30 flex items-center justify-center group-hover:bg-[#52B5A2]/5 transition-colors">
                                 <FontAwesomeIcon icon={faQrcode} className="text-4xl text-[#52B5A2]" />
@@ -81,7 +58,7 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
                             <div className="text-center">
                                 <span className="text-lg font-bold text-[#252F3D] block">Connect your Device</span>
                                 <span className="text-xs text-slate-500 mt-2 block leading-relaxed px-4">
-                                    Securely pair your Hestia hardware by scanning the identification code on the system panel.
+                                    Securely pair your hardware by scanning the identification code on the system panel.
                                 </span>
                             </div>
 
@@ -93,9 +70,7 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
                     </button>
                 </section>
 
-                {/* ═══════════════════════════════════
-                    Manual Connection — Dashboard Style
-                    ═══════════════════════════════════ */}
+                {/* Manual Connection */}
                 <section>
                     <button
                         onClick={() => setShowManual(!showManual)}
@@ -110,34 +85,26 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
                         </div>
                     </button>
 
-                    {/* Collapsible form */}
                     <div className={`overflow-hidden transition-all duration-300 ${showManual ? 'max-h-[400px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
                         <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-5 shadow-sm">
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-bold text-[#252F3D] uppercase tracking-wider">
-                                        IP Address
-                                    </label>
-                                    <span className="text-[9px] text-slate-400 font-mono">IPv4</span>
-                                </div>
+                                <label className="text-[10px] font-bold text-[#252F3D] uppercase tracking-wider">IP Address</label>
                                 <input
                                     type="text"
                                     value={ipAddress}
                                     onChange={(e) => setIpAddress(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded py-2.5 px-3 text-[#252F3D] text-sm font-mono focus:outline-none focus:border-[#52B5A2] transition-colors"
-                                    placeholder="192.168.4.74"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded py-2.5 px-3 text-[#252F3D] text-sm font-mono focus:outline-none focus:border-[#52B5A2]"
+                                    placeholder="192.168.1.1"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-[#252F3D] uppercase tracking-wider">
-                                    Service Port
-                                </label>
+                                <label className="text-[10px] font-bold text-[#252F3D] uppercase tracking-wider">Service Port</label>
                                 <input
                                     type="text"
                                     value={port}
                                     onChange={(e) => setPort(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded py-2.5 px-3 text-[#252F3D] text-sm font-mono focus:outline-none focus:border-[#52B5A2] transition-colors"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded py-2.5 px-3 text-[#252F3D] text-sm font-mono focus:outline-none focus:border-[#52B5A2]"
                                     placeholder="8085"
                                 />
                             </div>
@@ -148,22 +115,15 @@ const DeviceConnectionPortal: React.FC<DeviceConnectionPortalProps> = ({
                                 className="w-full py-3 bg-[#252F3D] text-white text-sm font-bold rounded active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md hover:bg-[#1a222c]"
                             >
                                 {isRetrying ? (
-                                    <>
-                                        <FontAwesomeIcon icon={faCircleNotch} className="animate-spin" />
-                                        COMMUNICATING...
-                                    </>
+                                    <FontAwesomeIcon icon={faCircleNotch} className="animate-spin" />
                                 ) : (
-                                    <>
-                                        ESTABLISH CONNECTION
-                                        <FontAwesomeIcon icon={faArrowRight} className="text-xs" />
-                                    </>
+                                    <>ESTABLISH CONNECTION <FontAwesomeIcon icon={faArrowRight} className="text-xs" /></>
                                 )}
                             </button>
                         </div>
                     </div>
                 </section>
 
-                {/* Status Bar / Tip */}
                 <div className="mt-auto">
                     <div className="bg-[#E9EDF2] border-l-4 border-[#252F3D] px-4 py-3 flex items-center gap-3">
                         <FontAwesomeIcon icon={faWifi} className="text-[#252F3D] text-sm" />
