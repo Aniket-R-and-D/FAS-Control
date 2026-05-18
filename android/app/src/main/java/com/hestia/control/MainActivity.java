@@ -128,9 +128,10 @@ public class MainActivity extends BridgeActivity {
                 panelWebView.setVisibility(View.GONE);
                 panelWebView.loadUrl("about:blank");
                 // Notify React
-                getBridge().getWebView().post(() -> 
-                    getBridge().getWebView().loadUrl("javascript:window.dispatchEvent(new CustomEvent('panelLoading', {detail: false}));")
-                );
+                getBridge().getWebView().post(() -> {
+                    getBridge().getWebView().loadUrl("javascript:window.dispatchEvent(new CustomEvent('panelLoading', {detail: false}));");
+                    getBridge().getWebView().loadUrl("javascript:window.dispatchEvent(new CustomEvent('panelClosed'));");
+                });
             }
         });
     }
@@ -138,7 +139,11 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onBackPressed() {
         if (panelWebView != null && panelWebView.getVisibility() == View.VISIBLE) {
-            closeDevicePanel();
+            if (panelWebView.canGoBack()) {
+                panelWebView.goBack();
+            } else {
+                closeDevicePanel();
+            }
         } else {
             super.onBackPressed();
         }

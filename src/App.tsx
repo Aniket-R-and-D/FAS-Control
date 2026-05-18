@@ -37,8 +37,18 @@ const HestiaControlPanel = () => {
         }
     };
 
+    const handlePanelClosed = () => {
+        setIsConnected(false);
+        setIsPanelLoading(false);
+    };
+
     window.addEventListener('panelLoading', handleLoadingEvent);
-    return () => window.removeEventListener('panelLoading', handleLoadingEvent);
+    window.addEventListener('panelClosed', handlePanelClosed);
+    
+    return () => {
+        window.removeEventListener('panelLoading', handleLoadingEvent);
+        window.removeEventListener('panelClosed', handlePanelClosed);
+    };
   }, []);
 
   // Cleanup
